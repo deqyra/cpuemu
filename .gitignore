@@ -1,0 +1,9 @@
+.vs
+.vscode
+bin
+build
+include/glm/out/*
+obj
+output
+external/lib
+external/include
