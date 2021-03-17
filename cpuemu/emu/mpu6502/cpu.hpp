@@ -18,8 +18,6 @@ public:
     static constexpr unsigned int MaxMemory = 1 << Bitness;
     using Memory = Memory<MaxMemory>;
 
-
-
 ///////////////
 // Registers //
 ///////////////
@@ -56,8 +54,16 @@ public:
     // Reset the state of the CPU
     void reset();
 
-    // Fetch and execute instruction from the memory for nCycles.
+    // Fetch and execute instructions from the memory for nCycles.
     void execute(Memory* mem, uint64_t nCycles);
+
+    // Fetch the next byte from memory and decode it as an instruction.
+    void fetchInstruction(Memory* mem);
+
+///////////////
+// Execution //
+///////////////
+
 };
 
 }
