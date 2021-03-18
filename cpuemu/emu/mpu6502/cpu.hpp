@@ -18,6 +18,17 @@ public:
     static constexpr unsigned int MaxMemory = 1 << Bitness;
     using Memory = Memory<MaxMemory>;
 
+    // Memory attached to the CPU
+    Memory& mem;
+
+    // Number of cycles completed by the CPU
+    uint64_t cycleCount;
+
+////////////////////
+/// Constructors ///
+////////////////////
+    CPU(Memory& mem);
+
 ///////////////
 // Registers //
 ///////////////
@@ -25,6 +36,7 @@ public:
     Word PC;
 
     // Stack pointer
+    // Points to memory range [0x0100; 0x01FF]
     Byte S;
 
     // Accumulator
@@ -36,16 +48,17 @@ public:
     // Register Y
     Byte Y;
 
+    // Processor status register
     struct StatusRegister
     {
-        unsigned int C: 1;  // Carry
-        unsigned int Z: 1;  // Zero
-        unsigned int I: 1;  // Interrupt disable
-        unsigned int D: 1;  // Decimal mode
-        unsigned int B: 1;  // Break command
-        unsigned int U: 1;  // User flag
-        unsigned int V: 1;  // Overflow
-        unsigned int N: 1;  // Negative
+        unsigned char c: 1;  // Carry
+        unsigned char z: 1;  // Zero
+        unsigned char i: 1;  // Interrupt disable
+        unsigned char d: 1;  // Decimal mode
+        unsigned char b: 1;  // Break command
+        unsigned char u: 1;  // User flag
+        unsigned char v: 1;  // Overflow
+        unsigned char n: 1;  // Negative
     } P;
 
 //////////////
@@ -54,16 +67,21 @@ public:
     // Reset the state of the CPU
     void reset();
 
-    // Fetch and execute instructions from the memory for nCycles.
-    void execute(Memory* mem, uint64_t nCycles);
+    // Step through nCycles cycles.
+    void step(uint64_t nCycles);
 
     // Fetch the next byte from memory and decode it as an instruction.
-    void fetchInstruction(Memory* mem);
+    Byte fetchInstruction();
+
+    // Decode the given instruction and execute it
+    void decodeAndExecute(Byte instruction);
 
 ///////////////
-// Execution //
+// Internals //
 ///////////////
-
+private:
+    // Remaining cycles to step through before stopping execution
+    uint64_t _remCycles;
 };
 
 }
