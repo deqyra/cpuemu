@@ -1,5 +1,8 @@
 #include "cpu.hpp"
 
+#include "instruction.hpp"
+#include "instruction_impl.hpp"
+
 namespace emu::mpu6502
 {
 
@@ -24,26 +27,29 @@ void CPU::reset()
     cycleCount = 7;
 }
 
-void CPU::step(uint64_t nCycles)
+void CPU::step(int64_t nCycles)
 {
     _remCycles = nCycles;
     while (_remCycles > 0)
     {
-        Byte ins = fetchInstruction();
+        Instruction ins = fetchInstruction();
+        decodeAndExecute(ins);
     }
+
+    cycleCount += nCycles + _remCycles;
 }
 
-Byte CPU::fetchInstruction()
+Instruction CPU::fetchInstruction()
 {
     Byte ins = mem[PC];
     PC++;
     _remCycles--;
-    return ins;
+    return (Instruction) ins;
 }
 
-void CPU::decodeAndExecute(Byte ins)
+void CPU::decodeAndExecute(Instruction ins)
 {
-
+    InstructionMap.at(ins)(*this);
 }
 
 }

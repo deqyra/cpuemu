@@ -32,11 +32,11 @@ enum class Instruction : Byte
     AND_ZP_IND_Y    = 0x31,     // Zero page indirect indexed with Y
 
     // Arithmetic shift one bit left, memory or accumulator
-    AND_ABS         = 0x0E,     // Absolute
-    AND_ABS_X       = 0x1E,     // Absolute indexed with X
-    AND_ACC         = 0x0A,     // Accumulator
-    AND_ZP          = 0x06,     // Zero page
-    AND_ZP_X        = 0x16,     // Zero page indexed with X
+    ASL_ABS         = 0x0E,     // Absolute
+    ASL_ABS_X       = 0x1E,     // Absolute indexed with X
+    ASL_ACC         = 0x0A,     // Accumulator
+    ASL_ZP          = 0x06,     // Zero page
+    ASL_ZP_X        = 0x16,     // Zero page indexed with X
 
     // Branch on bit set/reset
     BBR0            = 0x0F,
@@ -196,10 +196,10 @@ enum class Instruction : Byte
     PHY             = 0x5A,     // Y
 
     // Pull registers from stack (stack pointer increments)
-    PHA             = 0x68,     // Accumulator
-    PHP             = 0x28,     // Processor status
-    PHX             = 0xFA,     // X
-    PHY             = 0x7A,     // Y
+    PLA             = 0x68,     // Accumulator
+    PLP             = 0x28,     // Processor status
+    PLX             = 0xFA,     // X
+    PLY             = 0x7A,     // Y
 
     // Reet memory bit
     RMB0            = 0x07,

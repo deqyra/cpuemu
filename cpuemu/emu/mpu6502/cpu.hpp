@@ -4,6 +4,8 @@
 #include <emu/common/memory.hpp>
 #include <emu/common/types.hpp>
 
+#include "instruction.hpp"
+
 namespace emu::mpu6502
 {
 
@@ -68,20 +70,20 @@ public:
     void reset();
 
     // Step through nCycles cycles.
-    void step(uint64_t nCycles);
+    void step(int64_t nCycles);
 
     // Fetch the next byte from memory and decode it as an instruction.
-    Byte fetchInstruction();
+    Instruction fetchInstruction();
 
     // Decode the given instruction and execute it
-    void decodeAndExecute(Byte instruction);
+    void decodeAndExecute(Instruction ins);
 
 ///////////////
 // Internals //
 ///////////////
 private:
     // Remaining cycles to step through before stopping execution
-    uint64_t _remCycles;
+    int64_t _remCycles;
 };
 
 }
