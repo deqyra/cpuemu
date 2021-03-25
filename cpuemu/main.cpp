@@ -4,7 +4,7 @@
 	#include <windows.h>
 #endif//_WIN32
 
-#include <emu/common/types.hpp>
+#include <cpuemu/common/types.hpp>
 
 #include "main_tools.hpp"
 #include "project_env.hpp"

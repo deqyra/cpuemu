@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <emu/common/types.hpp>
+#include <cpuemu/common/types.hpp>
 
 std::vector<emu::Byte> loadBinFile(std::string path);
 
