@@ -1,5 +1,5 @@
-#ifndef CPUEMU__EMU__COMMON__MEMORY_HPP
-#define CPUEMU__EMU__COMMON__MEMORY_HPP
+#ifndef CPUEMU__COMMON__MEMORY_HPP
+#define CPUEMU__COMMON__MEMORY_HPP
 
 #include <algorithm>
 #include <cassert>
@@ -79,4 +79,4 @@ struct Memory
 }//namespace emu
 
 
-#endif//CPUEMU__EMU__COMMON__MEMORY_HPP
+#endif//CPUEMU__COMMON__MEMORY_HPP

@@ -134,9 +134,15 @@ ExternalProject_Add(${CPPTOOLS_LIB_NAME}_source
     GIT_REPOSITORY https://github.com/deqyra/CppTools
     CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=${EXPORT_LOCATION}
-    -DCPPTOOLS_EXTERNAL_INSTALL_PREFIX=True
     -DCPPTOOLS_SKIP_TESTS=ON
 )
+
+# set(COMPILAX_LIB_NAME "compilax")
+# ExternalProject_Add(${COMPILAX_LIB_NAME}_source
+#     GIT_REPOSITORY https://github.com/deqyra/CompilaX
+#     CMAKE_ARGS
+#     -DCMAKE_INSTALL_PREFIX=${EXPORT_LOCATION}
+# )
 
 set(EMU_COMMON_LIB_NAME "emucommon")
 set(EMU_COMMON_SOURCE_FILES
@@ -146,8 +152,8 @@ set(EMU_COMMON_SOURCE_FILES
     types.hpp
 )
 
-set(MOS6502_LIB_NAME "mos6502")
-set(MOS6502_SOURCE_FILES
+set(W65C02S_LIB_NAME "w65c02s")
+set(W65C02S_SOURCE_FILES
     cpu.cpp
     cpu.hpp
     instruction.hpp
@@ -239,7 +245,7 @@ set(MOS6502_SOURCE_FILES
 add_subdirectory(${CPUEMU_MODULE_LOCATION}/common ${CMAKE_BINARY_DIR}/${EMU_COMMON_LIB_NAME})
 
 # Import targets for MOS 6502
-add_subdirectory(${CPUEMU_MODULE_LOCATION}/mos6502 ${CMAKE_BINARY_DIR}/${MOS6502_LIB_NAME})
+add_subdirectory(${CPUEMU_MODULE_LOCATION}/w65c02s ${CMAKE_BINARY_DIR}/${W65C02S_LIB_NAME})
 
 
 
@@ -261,8 +267,8 @@ add_dependencies("cpuemu"
     ${CPPTOOLS_LIB_NAME}_source
     "export_${EMU_COMMON_LIB_NAME}_headers"
     "export_${EMU_COMMON_LIB_NAME}_lib"
-    "export_${MOS6502_LIB_NAME}_headers"
-    "export_${MOS6502_LIB_NAME}_lib"
+    "export_${W65C02S_LIB_NAME}_headers"
+    "export_${W65C02S_LIB_NAME}_lib"
 )
 
 target_include_directories("cpuemu" PUBLIC
@@ -275,7 +281,7 @@ target_link_directories("cpuemu" PUBLIC
 target_link_libraries("cpuemu" PUBLIC ${CMAKE_DL_LIBS}
     ${CPPTOOLS_LIB_NAME}
     ${EMU_COMMON_LIB_NAME}
-    ${MOS6502_LIB_NAME}
+    ${W65C02S_LIB_NAME}
 ) 
 
 add_custom_command(TARGET "cpuemu" POST_BUILD

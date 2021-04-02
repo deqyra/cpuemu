@@ -1,5 +1,5 @@
-#ifndef CPUEMU__EMU__COMMON__ENV_HPP
-#define CPUEMU__EMU__COMMON__ENV_HPP
+#ifndef CPUEMU__COMMON__ENV_HPP
+#define CPUEMU__COMMON__ENV_HPP
 
 #include <cstdint>
 #include <cstring>
@@ -50,4 +50,4 @@ inline void fixBigEndian(uint8_t* dest, uint8_t* source, uint64_t count)
 
 }//namespace emu
 
-#endif//CPUEMU__EMU__COMMON__ENV_HPP
+#endif//CPUEMU__COMMON__ENV_HPP

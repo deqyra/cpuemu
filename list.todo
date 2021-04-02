@@ -1,0 +1,8 @@
+cpuemu:
+    common:
+        ☐ Make CPU have a memory map instead of just mmemory
+        ☐ Provide interface for CPU wrapper
+    w65c02s:
+        ☐ Emulate as many pins as possible
+        ☐ Write CPU wrapper
+        ☐ Write sample programs
