@@ -9,7 +9,7 @@ namespace emu::w65c02s
 CPU::CPU(Memory& mem) :
     mem(mem),
     cycleCount(0),
-    _remCycles(0)
+    _instructionImpl(this)
 {
     reset();
 }
@@ -36,27 +36,17 @@ void CPU::reset()
 
 void CPU::step(int64_t nCycles)
 {
-    _remCycles = nCycles;
-    while (_remCycles > 0)
-    {
-        Instruction ins = fetchInstruction();
-        decodeAndExecute(ins);
-    }
-
-    cycleCount += nCycles - _remCycles;
+    while (nCycles-- < 0) tick();
 }
 
-Instruction CPU::fetchInstruction()
+void CPU::tick()
 {
-    Byte ins = mem[PC];
-    PC++;
-    _remCycles--;
-    return (Instruction) ins;
+    _decodeAndExecute();
 }
 
-void CPU::decodeAndExecute(Instruction ins)
+void CPU::_decodeAndExecute()
 {
-    InstructionMap.at(ins)(*this);
+    _instructionImpl.execute((Instruction)IR, TCU);
 }
 
 }

@@ -6,7 +6,10 @@ namespace emu::w65c02s
 
 enum class CycleOp
 {
-    
+    FetchInstruction,
+    AddWithCarry,
+    SetFlagsForDecimal,
+    TemporaryToAccumulator,
 };
 
 }

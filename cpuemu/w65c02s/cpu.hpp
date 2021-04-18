@@ -6,6 +6,7 @@
 #include <common/types.hpp>
 
 #include "instruction.hpp"
+#include "instruction_impl.hpp"
 
 namespace emu::w65c02s
 {
@@ -27,14 +28,45 @@ public:
     // Memory attached to the CPU
     Memory& mem;
 
-    // Number of cycles completed by the CPU
+    // Number of cycles completed by the CPU since last reset
     uint64_t cycleCount;
 
-////////////////////
-/// Constructors ///
-////////////////////
+private:
+///////////////
+// Internals //
+///////////////
+    // State of the read/write pin
+    bool _rnw;
 
-    CPU(Memory& mem);
+    // Internal address bus
+    Word _AD;
+
+    // Internal state of the sync pin
+    bool _sync;
+
+    // Decode and execute the next step of the current instruction
+    void _decodeAndExecute();
+
+    // Class which implements the instruction set
+    InstructionImpl _instructionImpl;
+
+    friend InstructionImpl;
+
+public:
+////////////
+// Pinout //
+////////////
+    // Tells whether the current cycle is read or write
+    // rnw stand for "read not write"; read as:
+    // if (rnw)  => read, not write => read cycle
+    // if (!rnw) => not read, write => write cycle
+    const bool& rnw = _rnw;
+
+    // 16 bit address bus
+    const Word& AB = _AD;
+
+    // SYNC pin
+    const bool& sync = _sync;
 
 ///////////////
 // Registers //
@@ -56,6 +88,16 @@ public:
     // Register Y
     Byte Y;
 
+/////////////
+// Control //
+/////////////
+
+    // Instruction register
+    Byte IR;
+
+    // Timing control unit
+    Byte TCU;
+
     // Processor status register
     struct StatusRegister
     {
@@ -69,27 +111,34 @@ public:
         unsigned char n: 1;  // Negative
     } P;
 
-//////////////
-// Controls //
-//////////////
+/////////////
+// Special //
+/////////////
+
+    // Data bus buffer
+    Byte DB;
+
+    // Input data latch
+    Byte DL;
+
+////////////////////
+/// Constructors ///
+////////////////////
+
+    CPU(Memory& mem);
+
+/////////////
+// Methods //
+/////////////
+
     // Reset the state of the CPU
     void reset();
 
-    // Step through nCycles cycles.
+    // Have the CPU go through a single cycle
+    void tick();
+
+    // Step through nCycles cycles
     void step(int64_t nCycles);
-
-    // Fetch the next byte from memory and decode it as an instruction.
-    Instruction fetchInstruction();
-
-    // Decode the given instruction and execute it
-    void decodeAndExecute(Instruction ins);
-
-///////////////
-// Internals //
-///////////////
-private:
-    // Remaining cycles to step through before stopping execution
-    int64_t _remCycles;
 };
 
 }

@@ -157,80 +157,8 @@ set(W65C02S_SOURCE_FILES
     cpu.cpp
     cpu.hpp
     instruction.hpp
+    instruction_impl.cpp
     instruction_impl.hpp
-    instruction_impl/addressing_mode.hpp
-    instruction_impl/common.cpp
-    instruction_impl/common.hpp
-    instruction_impl/arithmetic/adc.cpp
-    instruction_impl/arithmetic/cmp.cpp
-    instruction_impl/arithmetic/cpx.cpp
-    instruction_impl/arithmetic/cpy.cpp
-    instruction_impl/arithmetic/sbc.cpp
-    instruction_impl/bit/rmb.cpp
-    instruction_impl/bit/smb.cpp
-    instruction_impl/bit/trb.cpp
-    instruction_impl/bit/tsb.cpp
-    instruction_impl/branches/bbr.cpp
-    instruction_impl/branches/bbs.cpp
-    instruction_impl/branches/bcc.cpp
-    instruction_impl/branches/bcs.cpp
-    instruction_impl/branches/beq.cpp
-    instruction_impl/branches/bmi.cpp
-    instruction_impl/branches/bne.cpp
-    instruction_impl/branches/bpl.cpp
-    instruction_impl/branches/bra.cpp
-    instruction_impl/branches/bvc.cpp
-    instruction_impl/branches/bvs.cpp
-    instruction_impl/incdec/dec.cpp
-    instruction_impl/incdec/dex.cpp
-    instruction_impl/incdec/dey.cpp
-    instruction_impl/incdec/inc.cpp
-    instruction_impl/incdec/inx.cpp
-    instruction_impl/incdec/iny.cpp
-    instruction_impl/jumps/jmp.cpp
-    instruction_impl/jumps/jsr.cpp
-    instruction_impl/jumps/rts.cpp
-    instruction_impl/ldst/lda.cpp
-    instruction_impl/ldst/ldx.cpp
-    instruction_impl/ldst/ldy.cpp
-    instruction_impl/ldst/sta.cpp
-    instruction_impl/ldst/stx.cpp
-    instruction_impl/ldst/sty.cpp
-    instruction_impl/ldst/stz.cpp
-    instruction_impl/logical/and.cpp
-    instruction_impl/logical/bit.cpp
-    instruction_impl/logical/eor.cpp
-    instruction_impl/logical/ora.cpp
-    instruction_impl/regtransfer/tax.cpp
-    instruction_impl/regtransfer/tay.cpp
-    instruction_impl/regtransfer/txa.cpp
-    instruction_impl/regtransfer/tya.cpp
-    instruction_impl/shifts/asl.cpp
-    instruction_impl/shifts/lsr.cpp
-    instruction_impl/shifts/rol.cpp
-    instruction_impl/shifts/ror.cpp
-    instruction_impl/stack/pha.cpp
-    instruction_impl/stack/php.cpp
-    instruction_impl/stack/phx.cpp
-    instruction_impl/stack/phy.cpp
-    instruction_impl/stack/pla.cpp
-    instruction_impl/stack/plp.cpp
-    instruction_impl/stack/plx.cpp
-    instruction_impl/stack/ply.cpp
-    instruction_impl/stack/tsx.cpp
-    instruction_impl/stack/txs.cpp
-    instruction_impl/status/clc.cpp
-    instruction_impl/status/cld.cpp
-    instruction_impl/status/cli.cpp
-    instruction_impl/status/clv.cpp
-    instruction_impl/status/sec.cpp
-    instruction_impl/status/sed.cpp
-    instruction_impl/status/sei.cpp
-    instruction_impl/system/brk.cpp
-    instruction_impl/system/nop.cpp
-    instruction_impl/system/rti.cpp
-    instruction_impl/system/stp.cpp
-    instruction_impl/system/wai.cpp
 )
 
 

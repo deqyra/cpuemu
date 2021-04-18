@@ -15,6 +15,8 @@ enum class Instruction : Byte
     // A (c) next to the cycle cost of an instruction means 1 extra cycle is spent if a branch is taken across page boundaries.
     //
     // A (d) next to the cycle cost of an instruction means 1 extra cycle is spent if the processor is in decimal mode.
+    // This only affects the ADC and SBC instructions, and that extra cycle is used to correctly set the N and Z flags,
+    // thus fixing the so-called decimal bug present on the original nMOS-based 6502.
     //
     // A (p) next to the cycle cost of an instruction means 1 extra cycle is spent if the calculation of the final 
     // target memory address incurs a page cross (i.e when a carry bit must added to the high byte of the address).
@@ -151,12 +153,12 @@ enum class Instruction : Byte
     EOR_ZP          = 0x45,     // Zero page
     EOR_ZP_IND      = 0x42,     // Zero page indirect
     EOR_ZP_X        = 0x55,     // Zero page indexed with X
-    EOR_ZP_X_IND    = 0x51,     // Zero page indexed with X indirect
+    EOR_ZP_X_IND    = 0x41,     // Zero page indexed with X indirect
     EOR_ZP_IND_Y    = 0x51,     // Zero page indirect indexed with Y
 
     // Increment memory
     INC_ABS         = 0xEE,     // Absolute
-    INC_ABS_X       = 0xDE,     // Absolute indexed with X
+    INC_ABS_X       = 0xFE,     // Absolute indexed with X
     INC_ZP          = 0xE6,     // Zero page
     INC_ZP_X        = 0xF6,     // Zero page indexed with X
     // Increment register
