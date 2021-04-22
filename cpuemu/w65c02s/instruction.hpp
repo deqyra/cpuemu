@@ -65,7 +65,7 @@ enum class Instruction : Byte
     // [instr.]     = [opcode]  // [syntax]         // [effects]                    // [status flags]   // [cycle cost]     // Pre-fetch next opcode?
     ASL_ABS         = 0x0E,     // ASL $1234        // A = A & M[0x1234]            // 
     ASL_ABS_X       = 0x1E,     // ASL $1234,X      // A = A & M[0x1234 + X]        // 
-    ASL_ACC         = 0x0A,     // ASL              // A = A << 1                   // C,Z,          N  // 2                // 
+    ASL_ACC         = 0x0A,     // ASL A            // A = A << 1                   // C,Z,          N  // 2                // 
     ASL_ZP          = 0x06,     // ASL $12          // A = A & M[0x12]              // 
     ASL_ZP_X        = 0x16,     // ASL $12,X        // A = A & M[0x12 + X]          // 
 

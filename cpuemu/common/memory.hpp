@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
+#include <vector>
 
 #include <cpptools/type_utils.hpp>
 
@@ -32,20 +33,11 @@ struct Memory
             data[where] = b;
         }
 
-        template<
-            typename Container,
-            typename std::enable_if<type_utils::is_sized_container<Container>::value, void>::type
-        >
-        uint64_t operator=(const Container& c)
+        void operator=(const std::vector<Byte>& c)
         {
-            using std::size;
-            assert(where + size(c) <= Size);
+            assert(where + c.size() <= Size);
 
-            using std::begin;
-            using std::end;
-            std::copy(begin(c), end(c), data);
-
-            return size(c);
+            std::copy(c.begin(), c.end(), data + where);
         }
     };
 
@@ -57,22 +49,25 @@ struct Memory
         return {data, where};
     }
 
-    template<
-        typename Container,
-        typename std::enable_if<type_utils::is_sized_container<Container>::value, void>::type
-    >
-    uint64_t operator=(const Container& c)
+    template<Endianness E>
+    _cell operator[](Word<E> where)
+    {
+        assert(where < Size);
+        return {data, (uint16_t)where};
+    }
+
+    uint64_t operator=(const std::vector<Byte>& c)
     {
         using std::size;
-        assert(size(c) <= Size);
+        assert(c.size() <= Size);
 
         using std::begin;
         using std::end;
-        std::copy(begin(c), end(c), data);
+        std::copy(c.begin(), c.end(), data);
 
-        std::memset(data + size(c), 0, (size_t)(Size - size(c)));
+        std::memset(data + c.size(), 0, (size_t)(Size - c.size()));
 
-        return size(c);
+        return c.size();
     }
 };
 

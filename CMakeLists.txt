@@ -157,8 +157,6 @@ set(W65C02S_SOURCE_FILES
     cpu.cpp
     cpu.hpp
     instruction.hpp
-    instruction_impl.cpp
-    instruction_impl.hpp
 )
 
 
@@ -226,13 +224,21 @@ add_custom_command(TARGET "cpuemu" POST_BUILD
 ###############################################################################
 
 # Build and run tests
-# enable_testing()
-# add_executable(${TEST_TARGET_NAME})
-# target_link_libraries(${TEST_TARGET_NAME} PUBLIC "RenderBoi.Core" ${CPPTOOLS_LIB_NAME})
-# add_dependencies(${TEST_TARGET_NAME} "copy_assets" "copy_dlls")
+enable_testing()
+set(TEST_TARGET_NAME emutests)
+add_executable(${TEST_TARGET_NAME}
+    tests/main.cpp
+    tests/common/test_memory.cpp
+)
+add_dependencies(${TEST_TARGET_NAME} "cpuemu")
+target_link_libraries(${TEST_TARGET_NAME} PUBLIC
+    ${EMU_COMMON_LIB_NAME}
+    ${W65C02S_LIB_NAME}
+    ${CPPTOOLS_LIB_NAME}
+)
 
-# add_test(NAME "tests" COMMAND ${TEST_TARGET_NAME})
-# add_custom_command(TARGET ${TEST_TARGET_NAME}
-#                    COMMENT "Running tests"
-#                    POST_BUILD
-#                    COMMAND "./tests")
+add_test(NAME "tests" COMMAND ${TEST_TARGET_NAME})
+add_custom_command(TARGET ${TEST_TARGET_NAME}
+                   COMMENT "Running tests"
+                   POST_BUILD
+                   COMMAND "$<TARGET_FILE:${TEST_TARGET_NAME}>")

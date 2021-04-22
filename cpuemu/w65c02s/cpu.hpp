@@ -6,7 +6,6 @@
 #include <common/types.hpp>
 
 #include "instruction.hpp"
-#include "instruction_impl.hpp"
 
 namespace emu::w65c02s
 {
@@ -17,88 +16,12 @@ public:
 //////////
 // Info //
 //////////
-
     static constexpr Endianness Endianness = Endianness::Little;
     static constexpr unsigned char Bitness = 8;
     static constexpr unsigned char AddressBusSize = 16;
     static constexpr unsigned int MaxMemory = 1 << AddressBusSize;
-    using Memory = Memory<MaxMemory>;
     using Word = Word<Endianness>;
 
-    // Memory attached to the CPU
-    Memory& mem;
-
-    // Number of cycles completed by the CPU since last reset
-    uint64_t cycleCount;
-
-private:
-///////////////
-// Internals //
-///////////////
-    // State of the read/write pin
-    bool _rnw;
-
-    // Internal address bus
-    Word _AD;
-
-    // Internal state of the sync pin
-    bool _sync;
-
-    // Decode and execute the next step of the current instruction
-    void _decodeAndExecute();
-
-    // Class which implements the instruction set
-    InstructionImpl _instructionImpl;
-
-    friend InstructionImpl;
-
-public:
-////////////
-// Pinout //
-////////////
-    // Tells whether the current cycle is read or write
-    // rnw stand for "read not write"; read as:
-    // if (rnw)  => read, not write => read cycle
-    // if (!rnw) => not read, write => write cycle
-    const bool& rnw = _rnw;
-
-    // 16 bit address bus
-    const Word& AB = _AD;
-
-    // SYNC pin
-    const bool& sync = _sync;
-
-///////////////
-// Registers //
-///////////////
-
-    // Program counter
-    Word PC;
-
-    // Stack pointer
-    // Points to memory range [0x0100; 0x01FF]
-    Byte S;
-
-    // Accumulator
-    Byte A;
-
-    // Register X
-    Byte X;
-
-    // Register Y
-    Byte Y;
-
-/////////////
-// Control //
-/////////////
-
-    // Instruction register
-    Byte IR;
-
-    // Timing control unit
-    Byte TCU;
-
-    // Processor status register
     struct StatusRegister
     {
         unsigned char c: 1;  // Carry
@@ -109,28 +32,136 @@ public:
         unsigned char u: 1;  // User flag
         unsigned char v: 1;  // Overflow
         unsigned char n: 1;  // Negative
-    } P;
+    };
+
+private:
+///////////////////////////
+// Registers / Internals //
+///////////////////////////
+    // Program counter
+    Word _PC;
+
+    // Stack pointer
+    // Points to memory range [0x0100; 0x01FF]
+    Byte _S;
+
+    // Accumulator
+    Byte _A;
+
+    // Register X
+    Byte _X;
+
+    // Register Y
+    Byte _Y;
+
+    // Temporary register
+    Byte _TMP;
+
+    // Internal address bus
+    Word _AD;
+
+    // Internal address bus
+    Byte _DB;
+
+    // State of the read/write pin
+    bool _rnw;
+
+    // Internal state of the sync pin
+    bool _sync;
+
+    // Whether to continue execution
+    bool _rdy;
+
+    // Pull down at least two cycles to initiate reset sequence
+    bool _resb;
+
+    // Tells whether the RESB pin was already pulled down last cycle
+    bool __lastCycleWasReset;
+
+    // Tells which cycle of the reset sequence the processor is currently going through
+    uint8_t __currentResetCycle;
+
+    // Tells whether the next cycle is an op-code fetch
+    bool __syncNext;
 
 /////////////
-// Special //
+// Control //
 /////////////
+    // Instruction register
+    Byte _IR;
 
-    // Data bus buffer
-    Byte DB;
+    // Timing control unit
+    Byte _TCU;
 
-    // Input data latch
-    Byte DL;
+    // Processor status register
+    StatusRegister _P;
+
+    // Setup the sync flag for next cycle
+    void _updateSync();
+
+    // Decode and execute the next step of the current instruction
+    void _decodeAndExecute();
+
+    // Return a code to identify "which" cycle to perform in order to carry out 
+    // the given instruction at the given timing
+    static inline uint16_t _CycleId(Instruction ins, Byte timing);
+
+    // Compile-time-enforced version of the _CycleId(ins, timing) function
+    template<Instruction Ins, Byte Timing>
+    static inline constexpr uint16_t _CycleId()
+    {
+        constexpr uint16_t n = (static_cast<uint16_t>(Ins) << 8) + Timing;
+        return n;
+    }
+
+    // Put PC contents in address bus and set sync up
+    void _fetchInstruction();
+
+    // Execute the next reset cycle
+    void _continueReset();
+
+    // Implementation of the 7-cycle reset sequence
+    void _resetSequence_cycle1();
+    void _resetSequence_cycle2();
+    void _resetSequence_cycle3();
+    void _resetSequence_cycle4();
+    void _resetSequence_cycle5();
+    void _resetSequence_cycle6();
+    void _resetSequence_cycle7();
+
+public:
+////////////
+// Pinout //
+////////////
+    // Tells whether the current cycle is read or write
+    // Stands for "read not write" read as:
+    // if (rnw)  => read, not write => read cycle
+    // if (!rnw) => not read, write => write cycle
+    const bool& rnw = _rnw;
+
+    // 16 bit address bus
+    const Word& AB = _AD;
+
+    // SYNC pin
+    const bool& sync = _sync;
+
+    // Data bus
+    Byte& DB = _DB;
+
+    // RDY pin
+    bool& rdy = _rdy;
+
+    // RESB pin
+    bool& resb = _resb;
 
 ////////////////////
 /// Constructors ///
 ////////////////////
-
-    CPU(Memory& mem);
+    CPU();
 
 /////////////
 // Methods //
 /////////////
-
     // Reset the state of the CPU
     void reset();
 

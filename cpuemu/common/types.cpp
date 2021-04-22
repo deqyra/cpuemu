@@ -3,6 +3,50 @@
 namespace emu
 {
 
+Word<Endianness::Little>::Word()
+{
+#ifdef SYSTEM_LITTLE_ENDIAN
+    this->l = 0x00;
+    this->h = 0x00;
+#else // if defined SYSTEM_BIG_ENDIAN
+    this->l = 0x00;
+    this->h = 0x00;
+#endif
+}
+
+Word<Endianness::Big>::Word()
+{
+#ifdef SYSTEM_LITTLE_ENDIAN
+    this->l = 0x00;
+    this->h = 0x00;
+#else // if defined SYSTEM_BIG_ENDIAN
+    this->l = 0x00;
+    this->h = 0x00;
+#endif
+}
+
+Word<Endianness::Little>::Word(uint16_t v)
+{
+#ifdef SYSTEM_LITTLE_ENDIAN
+    this->l = ((Byte*)&v)[0];
+    this->h = ((Byte*)&v)[1];
+#else // if defined SYSTEM_BIG_ENDIAN
+    this->l = ((Byte*)&v)[1];
+    this->h = ((Byte*)&v)[0];
+#endif
+}
+
+Word<Endianness::Big>::Word(uint16_t v)
+{
+#ifdef SYSTEM_LITTLE_ENDIAN
+    this->l = ((Byte*)&v)[1];
+    this->h = ((Byte*)&v)[0];
+#else // if defined SYSTEM_BIG_ENDIAN
+    this->l = ((Byte*)&v)[0];
+    this->h = ((Byte*)&v)[1];
+#endif
+}
+
 Word<Endianness::Little>& Word<Endianness::Little>::operator=(uint16_t v)
 {
 #ifdef SYSTEM_LITTLE_ENDIAN
@@ -75,18 +119,20 @@ Word<Endianness::Big>& Word<Endianness::Big>::operator++()
     return *this;
 }
 
-Word<Endianness::Little>& Word<Endianness::Little>::operator++(int)
+Word<Endianness::Little> Word<Endianness::Little>::operator++(int)
 {
+    Word<Endianness::Little> v(*this);
     (*this) = (uint16_t)((uint16_t)(*this) + 1);
 
-    return *this;
+    return v;
 }
 
-Word<Endianness::Big>& Word<Endianness::Big>::operator++(int)
+Word<Endianness::Big> Word<Endianness::Big>::operator++(int)
 {
+    Word<Endianness::Big> v(*this);
     (*this) = (uint16_t)((uint16_t)(*this) + 1);
 
-    return *this;
+    return v;
 }
 
 Word<Endianness::Little>& Word<Endianness::Little>::operator--()
@@ -103,18 +149,20 @@ Word<Endianness::Big>& Word<Endianness::Big>::operator--()
     return *this;
 }
 
-Word<Endianness::Little>& Word<Endianness::Little>::operator--(int)
+Word<Endianness::Little> Word<Endianness::Little>::operator--(int)
 {
+    Word<Endianness::Little> v(*this);
     (*this) = (uint16_t)((uint16_t)(*this) - 1);
 
-    return *this;
+    return v;
 }
 
-Word<Endianness::Big>& Word<Endianness::Big>::operator--(int)
+Word<Endianness::Big> Word<Endianness::Big>::operator--(int)
 {
+    Word<Endianness::Big> v(*this);
     (*this) = (uint16_t)((uint16_t)(*this) - 1);
 
-    return *this;
+    return v;
 }
 
 Word<Endianness::Little>::operator uint16_t()
