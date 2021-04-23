@@ -6,6 +6,9 @@
 #include <common/types.hpp>
 
 #include "instruction.hpp"
+#include "pinout.hpp"
+#include "register_view.hpp"
+#include "status_register.hpp"
 
 namespace emu::w65c02s
 {
@@ -21,18 +24,6 @@ public:
     static constexpr unsigned char AddressBusSize = 16;
     static constexpr unsigned int MaxMemory = 1 << AddressBusSize;
     using Word = Word<Endianness>;
-
-    struct StatusRegister
-    {
-        unsigned char c: 1;  // Carry
-        unsigned char z: 1;  // Zero
-        unsigned char i: 1;  // Interrupt disable
-        unsigned char d: 1;  // Decimal mode
-        unsigned char b: 1;  // Break command
-        unsigned char u: 1;  // User flag
-        unsigned char v: 1;  // Overflow
-        unsigned char n: 1;  // Negative
-    };
 
 private:
 ///////////////////////////
@@ -75,8 +66,8 @@ private:
     // Pull down at least two cycles to initiate reset sequence
     bool _resb;
 
-    // Tells whether the RESB pin was already pulled down last cycle
-    bool __lastCycleWasReset;
+    // Tells how many consecutive cycles the RESB pin was pulled down for
+    uint64_t __cyclesWithResetPulledDown;
 
     // Tells which cycle of the reset sequence the processor is currently going through
     uint8_t __currentResetCycle;
@@ -130,29 +121,29 @@ private:
     void _resetSequence_cycle7();
 
 public:
-////////////
-// Pinout //
-////////////
-    // Tells whether the current cycle is read or write
-    // Stands for "read not write" read as:
-    // if (rnw)  => read, not write => read cycle
-    // if (!rnw) => not read, write => write cycle
-    const bool& rnw = _rnw;
+////////////////////////////
+// Pinout / register view //
+////////////////////////////
+    Pinout pins = {
+        .rnw    = _rnw,
+        .AB     = _AD,
+        .sync   = _sync,
+        .DB     = _DB,
+        .rdy    = _rdy,
+        .resb   = _resb
+    };
 
-    // 16 bit address bus
-    const Word& AB = _AD;
-
-    // SYNC pin
-    const bool& sync = _sync;
-
-    // Data bus
-    Byte& DB = _DB;
-
-    // RDY pin
-    bool& rdy = _rdy;
-
-    // RESB pin
-    bool& resb = _resb;
+    RegisterView registers = {
+        .PC     = _PC,
+        .S      = _S,
+        .A      = _A,
+        .X      = _X,
+        .Y      = _Y,
+        .TMP    = _TMP,
+        .IR     = _IR,
+        .TCU    = _TCU,
+        .P      = _P
+    };
 
 ////////////////////
 /// Constructors ///
@@ -162,9 +153,6 @@ public:
 /////////////
 // Methods //
 /////////////
-    // Reset the state of the CPU
-    void reset();
-
     // Have the CPU go through a single cycle
     void tick();
 

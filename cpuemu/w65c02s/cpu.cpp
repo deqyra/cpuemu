@@ -18,58 +18,34 @@ CPU::CPU() :
     _DB(0xFF),
     _rnw(true),
     _rdy(true),
-    _resb(false),
+    _resb(true),
     _sync(false),
-    __lastCycleWasReset(false),
+    __cyclesWithResetPulledDown(false),
     __currentResetCycle(1),
-    __syncNext(false)
+    __syncNext(true)
 {
-
-}
-
-void CPU::reset()
-{
-    //
-    //  TODO
-    //
-
-    // Reset by hardware
-    _P.i = 1;    // Interrupt disable
-    _P.d = 0;    // Decimal mode
-    _P.b = 1;    // Break
-    _P.u = 1;    // User flag
-
-    // To be set by software
-    // P.c -- carry
-    // P.z -- zero
-    // P.v -- overflow
-    // P.n -- negative
-
-    // _PC = (mem[0xFFFD] << 8) + (mem[0xFFFC]);
-    _S = 0xFF;
+    _updateSync();
 }
 
 void CPU::step(int64_t nCycles)
 {
-    while (nCycles-- < 0) tick();
+    while (nCycles-- > 0) tick();
 }
 
 void CPU::tick()
 {
-    if (_resb)
+    if (!_resb)
     {
-        if (!__lastCycleWasReset)
-        {
-            __lastCycleWasReset = true;
-        }
-        else // if (__lastCycleWasReset)
+        __cyclesWithResetPulledDown++;
+        if (__cyclesWithResetPulledDown > 2) return;
+    }
+    else // if (_resb)
+    {
+        if (__cyclesWithResetPulledDown >= 2)
         {
             __currentResetCycle = 1;
         }
-    }
-    else if (__lastCycleWasReset)
-    {
-        __lastCycleWasReset = false;
+        __cyclesWithResetPulledDown = 0;
     }
     
     if (__currentResetCycle != 0)
@@ -90,6 +66,7 @@ void CPU::tick()
         _decodeAndExecute();        
     }
 
+    if (!_resb) __syncNext = (__cyclesWithResetPulledDown >= 2);
     _updateSync();
 }
 
@@ -196,17 +173,17 @@ void CPU::_decodeAndExecute()
         _AD = _PC++;                                                    // Fetch low byte of target address
         break;
 
-    case _CycleId<Instruction::ADC_ABS_X,    0x01>():                   /////////////////////////////////////
+    case _CycleId<Instruction::ADC_ABS_X,    0x01>():                   /////////////////////////////////////////
         _AD = _PC++;                                                    // Fetch high byte of target address
-        _TMP = _DB;                                                     // Save low byte of target address
+        _TMP = _DB + _X;                                                // Index low byte of target address by X
         break;
 
     case _CycleId<Instruction::ADC_ABS_X,    0x02>():                   /////////////////////////////////
-        _AD.l = _TMP + _X;                                              // Fetch byte at indexed address
+        _AD.l = _TMP;                                                   // Fetch byte at indexed address
         _AD.h = _DB;
 
         // If indexing did not incur a page-cross, skip next step
-        if (_DB < _AD.l) _TCU++;
+        if (_X <= _TMP) _TCU++;
         break;
 
     case _CycleId<Instruction::ADC_ABS_X,    0x03>():                   /////////////////////////////////
@@ -252,7 +229,7 @@ void CPU::_decodeAndExecute()
         _AD.h = _DB;
 
         // If indexing did not incur a page-cross, skip next step
-        if (_Y < _TMP) _TCU++;
+        if (_Y <= _TMP) _TCU++;
         break;
 
     case _CycleId<Instruction::ADC_ABS_Y,    0x03>():                   /////////////////////////////////
@@ -362,8 +339,8 @@ void CPU::_decodeAndExecute()
         break;
 
     case _CycleId<Instruction::ADC_ZP_IND,    0x03>():                  ///////////////////////
-        _AD.h = _TMP;                                                   // Fetch indirect byte
-        _AD.l = _DB;
+        _AD.h = _DB;                                                    // Fetch indirect byte
+        _AD.l = _TMP;
         break;
 
     case _CycleId<Instruction::ADC_ZP_IND,    0x04>():                  //////////////
@@ -496,7 +473,7 @@ void CPU::_decodeAndExecute()
         _AD.l = _TMP;
 
         // If indexing did not incur a page-cross, skip next step
-        if (_Y < _TMP) _TCU++;
+        if (_Y <= _TMP) _TCU++;
         break;
 
     case _CycleId<Instruction::ADC_ZP_IND_Y,    0x04>():                ////////////////////////////////
@@ -522,6 +499,9 @@ void CPU::_decodeAndExecute()
         _fetchInstruction();
         break;
 
+#undef ADC_BINARY
+#undef ADC_DECIMAL_COMPUTE
+#undef ADC_DECIMAL_SET_ZVN
 
 
 
@@ -750,6 +730,11 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::LDX_ABS_Y,    0x00>():
         break;
     case _CycleId<Instruction::LDX_IMM,      0x00>():
+        _AD = _PC++;
+        break;
+    case _CycleId<Instruction::LDX_IMM,      0x01>():
+        _X = _DB;
+        _fetchInstruction();
         break;
     case _CycleId<Instruction::LDX_ZP,       0x00>():
         break;
@@ -760,6 +745,11 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::LDY_ABS_X,    0x00>():
         break;
     case _CycleId<Instruction::LDY_IMM,      0x00>():
+        _AD = _PC++;
+        break;
+    case _CycleId<Instruction::LDY_IMM,      0x01>():
+        _Y = _DB;
+        _fetchInstruction();
         break;
     case _CycleId<Instruction::LDY_ZP,       0x00>():
         break;
