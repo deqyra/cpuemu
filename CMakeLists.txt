@@ -156,7 +156,14 @@ set(W65C02S_LIB_NAME "w65c02s")
 set(W65C02S_SOURCE_FILES
     cpu.cpp
     cpu.hpp
+    execution_wrapper.cpp
+    execution_wrapper.hpp
     instruction.hpp
+    instruction_info.hpp
+    pinout.hpp
+    program_sanity_checker.cpp
+    program_sanity_checker.hpp
+    register_view.hpp
 )
 
 
@@ -229,6 +236,9 @@ set(TEST_TARGET_NAME emutests)
 add_executable(${TEST_TARGET_NAME}
     tests/main.cpp
     tests/common/test_memory.cpp
+    tests/w65c02s/test_program_sanity_checker.cpp
+    tests/w65c02s/test_execution_wrapper.cpp
+    tests/w65c02s/instructions/arithmetic/test_adc.cpp
 )
 add_dependencies(${TEST_TARGET_NAME} "cpuemu")
 target_link_libraries(${TEST_TARGET_NAME} PUBLIC
