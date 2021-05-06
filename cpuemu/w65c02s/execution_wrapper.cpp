@@ -38,15 +38,15 @@ void ExecutionWrapper::cycleStep()
 
 uint8_t ExecutionWrapper::instructionStep()
 {
-    cycleStep();
-    uint8_t n = 1;
+    uint8_t n = 0;
 
     // Tick until the next instruction is being fetched
-    while (!_cpu.pins.sync)
+    do
     {
         cycleStep();
         n++;
     }
+    while (!_cpu.pins.sync);
 
     // Return stepped-through cycle countB
     return n;

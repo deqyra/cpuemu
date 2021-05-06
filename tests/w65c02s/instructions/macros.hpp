@@ -3,7 +3,7 @@
 
 #include <catch2/catch2.hpp>
 
-#define FIND_INSTRUCTION_INFO_OR_FAIL(instruction)                                \
+#define FIND_INSTRUCTION_INFO_OR_FAIL(instruction)                              \
         InstructionInfoData.find(instruction);                                  \
         if (it == InstructionInfoData.end())                                    \
         {                                                                       \

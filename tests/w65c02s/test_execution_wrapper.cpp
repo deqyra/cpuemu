@@ -12,7 +12,7 @@
 namespace emu::w65c02s
 {
 
-TEST_CASE("ExecutionWrapper")
+TEST_CASE("ExecutionWrapper", TAGS)
 {
     using namespace emu;
     using Ins = w65c02s::Instruction;

@@ -120,6 +120,19 @@ private:
     void _resetSequence_cycle6();
     void _resetSequence_cycle7();
 
+    // Perform the ADC calculation on provided registers
+    inline void _doAdcBinary(Byte& op1, Byte& op2, Byte& res);
+
+    // Perform the decimal ADC calculation on provided registers
+    inline void _doAdcDecimal(Byte& op1, Byte& op2, Byte& res);
+
+    // Set the zero and negative status flags from a value
+    inline void _setZnFrom(Byte value);
+
+    // Set the zero, overflow and negative status flags from two operands and
+    // their result when added together
+    inline void _setZvnFromAdcResult(Byte op1, Byte op2, Byte res);
+
 public:
 ////////////////////////////
 // Pinout / register view //

@@ -98,31 +98,110 @@ void CPU::_decodeAndExecute()
     ////////////////////////////////////////////
     ////////////////////////////////////////////
 
-#define ADC_BINARY                              \
-    _TMP = (_A + _DB + _P.c) & 0xFF;            \
-    _P.v = (_A ^ _TMP) & (_DB ^ _TMP) & 0x80;   \
-    _P.c = (_TMP < _DB);                        \
-    _P.z = (_A == 0x00);                        \
-    _P.n = (_TMP & 0x80);                       \
-    _A = _TMP;
+    //
+    // Immediate operand
+    //
 
-#define ADC_DECIMAL_COMPUTE                                                                         \
-    _TMP = ((_A & 0x0F) + (_DB & 0x0F));    /* Add lower nibbles of operands                   */   \
-    uint8_t c = _TMP >= 10 ? 1 : 0;         /* Decimal carry from lower nibble addition        */   \
-                                                                                                    \
-    uint8_t higher  = (_A  >> 4)            /* Take higher nibble of _A, make it lower         */   \
-                    + (_DB >> 4)            /* Add higher nibble of _DB made lower             */   \
-                    +   c;                  /* Add decimal carry from lower nibble addition    */   \
-    _P.c = higher >= 10 ? 1 : 0;            /* Set processor carry                             */   \
-                                                                                                    \
-    /* Shift BCD result back to higher nibble, OR it with BCD lower nibble to get final result */   \
-    _TMP = ((higher % 10) << 4) | (_TMP % 10)
+    case _CycleId<Instruction::ADC_IMM,      0x00>():                   /////////////////
+        _AD = _PC++;                                                    // Fetch operand
+        break;
 
-#define ADC_DECIMAL_SET_ZVN                     \
-    _P.z = (_TMP == 0x00);                      \
-    _P.v = (_A ^ _TMP) & (_DB ^ _TMP) & 0x80;   \
-    _P.n = (_TMP &  0x80);                      \
-    _A = _TMP
+    case _CycleId<Instruction::ADC_IMM,      0x01>():                   //////////////
+        if (!_P.d)          // Binary mode                              // Do addtion
+        {
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
+            _fetchInstruction();
+        }
+        else //if (_P.d)    // Decimal mode
+        {
+            _doAdcDecimal(_A, _DB, _TMP);
+        }
+        break;
+
+    case _CycleId<Instruction::ADC_IMM,      0x02>():                   //////////////////////////////////////
+        assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
+
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
+        _fetchInstruction();
+        break;
+
+
+
+    //
+    // Zero-page address
+    //
+
+    case _CycleId<Instruction::ADC_ZP,    0x00>():                      ///////////////////////////
+        _AD = _PC++;                                                    // Fetch target ZP address
+        break;
+
+    case _CycleId<Instruction::ADC_ZP,    0x01>():                      /////////////////
+        _AD.h = 0x00;                                                   // Fetch ZP byte
+        _AD.l = _DB;
+        break;
+
+    case _CycleId<Instruction::ADC_ZP,    0x02>():                      //////////////
+        if (!_P.d)          // Binary mode                              // Do addtion
+        {
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
+            _fetchInstruction();
+        }
+        else //if (_P.d)    // Decimal mode
+        {
+            _doAdcDecimal(_A, _DB, _TMP);
+        }
+        break;
+
+    case _CycleId<Instruction::ADC_ZP,    0x03>():                      //////////////////////////////////////
+        assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
+
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
+        _fetchInstruction();
+        break;
+
+
+
+    //
+    // Zero-page address, indexed by X
+    //
+
+    case _CycleId<Instruction::ADC_ZP_X,    0x00>():                    ////////////////////
+        _AD = _PC++;                                                    // Fetch ZP address
+        break;
+
+    case _CycleId<Instruction::ADC_ZP_X,    0x01>():                    /////////////////////////
+        _TMP = _DB + _X;                                                // Index ZP address by X
+        break;
+
+    case _CycleId<Instruction::ADC_ZP_X,    0x02>():                    ////////////////////////
+        _AD.h = 0x00;                                                   // Fetch addressed byte
+        _AD.l = _TMP;
+        break;
+
+    case _CycleId<Instruction::ADC_ZP_X,    0x03>():                    //////////////
+        if (!_P.d)          // Binary mode                              // Do addtion
+        {
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
+            _fetchInstruction();
+        }
+        else //if (_P.d)    // Decimal mode
+        {
+            _doAdcDecimal(_A, _DB, _TMP);
+        }
+        break;
+
+    case _CycleId<Instruction::ADC_ZP_X,    0x04>():                    //////////////////////////////////////
+        assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
+
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
+        _fetchInstruction();
+        break;
 
 
 
@@ -147,19 +226,21 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::ADC_ABS,      0x03>():                   //////////////
         if (!_P.d)          // Binary mode                              // Do addtion
         {
-            ADC_BINARY;
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
             _fetchInstruction();
         }
         else //if (_P.d)    // Decimal mode
         {
-            ADC_DECIMAL_COMPUTE;
+            _doAdcDecimal(_A, _DB, _TMP);
         }
         break;
 
     case _CycleId<Instruction::ADC_ABS,      0x04>():                   //////////////////////////////////////
         assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
 
-        ADC_DECIMAL_SET_ZVN;
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
         _fetchInstruction();
         break;
 
@@ -193,19 +274,21 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::ADC_ABS_X,    0x04>():                   //////////////
         if (!_P.d)          // Binary mode                              // Do addtion
         {
-            ADC_BINARY;
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
             _fetchInstruction();
         }
         else //if (_P.d)    // Decimal mode
         {
-            ADC_DECIMAL_COMPUTE;
+            _doAdcDecimal(_A, _DB, _TMP);
         }
         break;
 
     case _CycleId<Instruction::ADC_ABS_X,    0x05>():                   //////////////////////////////////////
         assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
 
-        ADC_DECIMAL_SET_ZVN;
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
         _fetchInstruction();
         break;
 
@@ -239,82 +322,21 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::ADC_ABS_Y,    0x04>():                   //////////////
         if (!_P.d)          // Binary mode                              // Do addtion
         {
-            ADC_BINARY;
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
             _fetchInstruction();
         }
         else //if (_P.d)    // Decimal mode
         {
-            ADC_DECIMAL_COMPUTE;
+            _doAdcDecimal(_A, _DB, _TMP);
         }
         break;
 
     case _CycleId<Instruction::ADC_ABS_Y,    0x05>():                   //////////////////////////////////////
         assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
 
-        ADC_DECIMAL_SET_ZVN;
-        _fetchInstruction();
-        break;
-
-
-
-    //
-    // Immediate operand
-    //
-
-    case _CycleId<Instruction::ADC_IMM,      0x00>():                   /////////////////
-        _AD = _PC++;                                                    // Fetch operand
-        break;
-
-    case _CycleId<Instruction::ADC_IMM,      0x01>():                   //////////////
-        if (!_P.d)          // Binary mode                              // Do addtion
-        {
-            ADC_BINARY;
-            _fetchInstruction();
-        }
-        else //if (_P.d)    // Decimal mode
-        {
-            ADC_DECIMAL_COMPUTE;
-        }
-        break;
-
-    case _CycleId<Instruction::ADC_IMM,      0x02>():                   //////////////////////////////////////
-        assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
-
-        ADC_DECIMAL_SET_ZVN;
-        _fetchInstruction();
-        break;
-
-
-
-    //
-    // Zero-page address
-    //
-
-    case _CycleId<Instruction::ADC_ZP,    0x00>():                      ///////////////////////////
-        _AD = _PC++;                                                    // Fetch target ZP address
-        break;
-
-    case _CycleId<Instruction::ADC_ZP,    0x01>():                      /////////////////
-        _AD.h = 0x00;                                                   // Fetch ZP byte
-        _AD.l = _DB;
-        break;
-
-    case _CycleId<Instruction::ADC_ZP,    0x02>():                      //////////////
-        if (!_P.d)          // Binary mode                              // Do addtion
-        {
-            ADC_BINARY;
-            _fetchInstruction();
-        }
-        else //if (_P.d)    // Decimal mode
-        {
-            ADC_DECIMAL_COMPUTE;
-        }
-        break;
-
-    case _CycleId<Instruction::ADC_ZP,    0x03>():                      //////////////////////////////////////
-        assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
-
-        ADC_DECIMAL_SET_ZVN;
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
         _fetchInstruction();
         break;
 
@@ -346,57 +368,21 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::ADC_ZP_IND,    0x04>():                  //////////////
         if (!_P.d)          // Binary mode                              // Do addtion
         {
-            ADC_BINARY;
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
             _fetchInstruction();
         }
         else //if (_P.d)    // Decimal mode
         {
-            ADC_DECIMAL_COMPUTE;
+            _doAdcDecimal(_A, _DB, _TMP);
         }
         break;
 
     case _CycleId<Instruction::ADC_ZP_IND,    0x05>():                  //////////////////////////////////////
         assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
 
-        ADC_DECIMAL_SET_ZVN;
-        _fetchInstruction();
-        break;
-
-
-
-    //
-    // Zero-page address, indexed by X
-    //
-
-    case _CycleId<Instruction::ADC_ZP_X,    0x00>():                    ////////////////////
-        _AD = _PC++;                                                    // Fetch ZP address
-        break;
-
-    case _CycleId<Instruction::ADC_ZP_X,    0x01>():                    /////////////////////////
-        _TMP = _DB + _X;                                                // Index ZP address by X
-        break;
-
-    case _CycleId<Instruction::ADC_ZP_X,    0x02>():                    ////////////////////////
-        _AD.h = 0x00;                                                   // Fetch addressed byte
-        _AD.l = _TMP;
-        break;
-
-    case _CycleId<Instruction::ADC_ZP_X,    0x03>():                    //////////////
-        if (!_P.d)          // Binary mode                              // Do addtion
-        {
-            ADC_BINARY;
-            _fetchInstruction();
-        }
-        else //if (_P.d)    // Decimal mode
-        {
-            ADC_DECIMAL_COMPUTE;
-        }
-        break;
-
-    case _CycleId<Instruction::ADC_ZP_X,    0x04>():                    //////////////////////////////////////
-        assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
-
-        ADC_DECIMAL_SET_ZVN;
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
         _fetchInstruction();
         break;
 
@@ -432,19 +418,21 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::ADC_ZP_X_IND,    0x05>():                //////////////
         if (!_P.d)          // Binary mode                              // Do addtion
         {
-            ADC_BINARY;
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
             _fetchInstruction();
         }
         else //if (_P.d)    // Decimal mode
         {
-            ADC_DECIMAL_COMPUTE;
+            _doAdcDecimal(_A, _DB, _TMP);
         }
         break;
 
     case _CycleId<Instruction::ADC_ZP_X_IND,    0x06>():                //////////////////////////////////////
         assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
 
-        ADC_DECIMAL_SET_ZVN;
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
         _fetchInstruction();
         break;
 
@@ -483,25 +471,23 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::ADC_ZP_IND_Y,    0x05>():                //////////////
         if (!_P.d)          // Binary mode                              // Do addtion
         {
-            ADC_BINARY;
+            _doAdcBinary(_A, _DB, _TMP);
+			_A = _TMP;;
             _fetchInstruction();
         }
         else //if (_P.d)    // Decimal mode
         {
-            ADC_DECIMAL_COMPUTE;
+            _doAdcDecimal(_A, _DB, _TMP);
         }
         break;
 
     case _CycleId<Instruction::ADC_ZP_IND_Y,    0x06>():                //////////////////////////////////////
         assert(_P.d);                                                   // Decimal mode only: set Z,V,N flags
 
-        ADC_DECIMAL_SET_ZVN;
+        _setZvnFromAdcResult(_A, _DB, _TMP);
+		_A = _TMP;
         _fetchInstruction();
         break;
-
-#undef ADC_BINARY
-#undef ADC_DECIMAL_COMPUTE
-#undef ADC_DECIMAL_SET_ZVN
 
 
 
@@ -519,25 +505,258 @@ void CPU::_decodeAndExecute()
     ////                                    ////
     ////////////////////////////////////////////
     ////////////////////////////////////////////
-                          
-    case _CycleId<Instruction::AND_ABS,      0x00>():
+
+    //
+    // Immediate operand
+    //
+
+    case _CycleId<Instruction::AND_IMM,      0x00>():                   /////////////////
+        _AD = _PC++;                                                    // Fetch operand
         break;
-    case _CycleId<Instruction::AND_ABS_X,    0x00>():
+
+    case _CycleId<Instruction::AND_IMM,      0x01>():                   //////////////
+        // AND_BINARY;
+        _fetchInstruction();
         break;
-    case _CycleId<Instruction::AND_ABS_Y,    0x00>():
+
+
+
+    //
+    // Zero-page address
+    //
+
+    case _CycleId<Instruction::AND_ZP,    0x00>():                      ///////////////////////////
+        _AD = _PC++;                                                    // Fetch target ZP address
         break;
-    case _CycleId<Instruction::AND_IMM,      0x00>():
+
+    case _CycleId<Instruction::AND_ZP,    0x01>():                      /////////////////
+        _AD.h = 0x00;                                                   // Fetch ZP byte
+        _AD.l = _DB;
         break;
-    case _CycleId<Instruction::AND_ZP,       0x00>():
+
+    case _CycleId<Instruction::AND_ZP,    0x02>():                      //////////////
+        // AND_BINARY;
+        _fetchInstruction();
         break;
-    case _CycleId<Instruction::AND_ZP_IND,   0x00>():
+
+
+
+    //
+    // Zero-page address, indexed by X
+    //
+
+    case _CycleId<Instruction::AND_ZP_X,    0x00>():                    ////////////////////
+        _AD = _PC++;                                                    // Fetch ZP address
         break;
-    case _CycleId<Instruction::AND_ZP_X,     0x00>():
+
+    case _CycleId<Instruction::AND_ZP_X,    0x01>():                    /////////////////////////
+        _TMP = _DB + _X;                                                // Index ZP address by X
         break;
-    case _CycleId<Instruction::AND_ZP_X_IND, 0x00>():
+
+    case _CycleId<Instruction::AND_ZP_X,    0x02>():                    ////////////////////////
+        _AD.h = 0x00;                                                   // Fetch addressed byte
+        _AD.l = _TMP;
         break;
-    case _CycleId<Instruction::AND_ZP_IND_Y, 0x00>():
+
+    case _CycleId<Instruction::AND_ZP_X,    0x03>():                    //////////////
+        // AND_BINARY;
+        _fetchInstruction();
         break;
+
+
+
+    //
+    // Absolute address
+    //
+
+    case _CycleId<Instruction::AND_ABS,      0x00>():                   ////////////////////////////////////
+        _AD = _PC++;                                                    // Fetch low byte of target address
+        break;
+
+    case _CycleId<Instruction::AND_ABS,      0x01>():                   /////////////////////////////////////
+        _TMP = _DB;                                                     // Save low byte of target address
+        _AD = _PC++;                                                    // Fetch high byte of target address
+        break;
+
+    case _CycleId<Instruction::AND_ABS,      0x02>():                   ////////////////////////////////
+        _AD.l = _TMP;                                                   // Fetch addressed byte
+        _AD.h = _DB;
+        break;
+
+    case _CycleId<Instruction::AND_ABS,      0x03>():                   //////////////
+        // AND_BINARY;
+        _fetchInstruction();
+        break;
+
+
+
+    //
+    // Absolute address, indexed by X
+    //
+
+    case _CycleId<Instruction::AND_ABS_X,    0x00>():                   ////////////////////////////////////
+        _AD = _PC++;                                                    // Fetch low byte of target address
+        break;
+
+    case _CycleId<Instruction::AND_ABS_X,    0x01>():                   /////////////////////////////////////////
+        _AD = _PC++;                                                    // Fetch high byte of target address
+        _TMP = _DB + _X;                                                // Index low byte of target address by X
+        break;
+
+    case _CycleId<Instruction::AND_ABS_X,    0x02>():                   /////////////////////////////////
+        _AD.l = _TMP;                                                   // Fetch byte at indexed address
+        _AD.h = _DB;
+
+        // If indexing did not incur a page-cross, skip next step
+        if (_X <= _TMP) _TCU++;
+        break;
+
+    case _CycleId<Instruction::AND_ABS_X,    0x03>():                   /////////////////////////////////
+        _AD.h++;                                                        // In case of a page-cross only
+        break;                                                          // "Cross" the page
+
+    case _CycleId<Instruction::AND_ABS_X,    0x04>():                   //////////////
+        // AND_BINARY;
+        _fetchInstruction();
+        break;
+
+
+
+    //
+    // Absolute address, indexed by Y
+    //
+
+    case _CycleId<Instruction::AND_ABS_Y,    0x00>():                   ////////////////////////////////////
+        _AD = _PC++;                                                    // Fetch low byte of target address
+        break;
+
+    case _CycleId<Instruction::AND_ABS_Y,    0x01>():                   /////////////////////////////////////////
+        _AD = _PC++;                                                    // Fetch high byte of target address
+        _TMP = _DB + _Y;                                                // Index low byte of target address by Y
+        break;
+
+    case _CycleId<Instruction::AND_ABS_Y,    0x02>():                   ////////////////////////
+        _AD.l = _TMP;                                                   // Fetch addressed byte
+        _AD.h = _DB;
+
+        // If indexing did not incur a page-cross, skip next step
+        if (_Y <= _TMP) _TCU++;
+        break;
+
+    case _CycleId<Instruction::AND_ABS_Y,    0x03>():                   /////////////////////////////////
+        _AD.h++;                                                        // In case of a page-cross only
+        break;                                                          // "Cross" the page
+
+    case _CycleId<Instruction::AND_ABS_Y,    0x04>():                   //////////////
+        // AND_BINARY;
+        _fetchInstruction();
+        break;
+
+
+
+    //
+    // Zero-page address, indirect
+    //
+
+    case _CycleId<Instruction::AND_ZP_IND,    0x00>():                  ///////////////////////////
+        _AD = _PC++;                                                    // Fetch target ZP address
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND,    0x01>():                  /////////////////////
+        _AD.h = 0x00;                                                   // Fetch ZP low byte
+        _AD.l = _DB;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND,    0x02>():                  //////////////////////
+        _AD.l++;                                                        // Fetch ZP high byte
+        _TMP = _DB;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND,    0x03>():                  ///////////////////////
+        _AD.h = _DB;                                                    // Fetch indirect byte
+        _AD.l = _TMP;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND,    0x04>():                  //////////////
+        // AND_BINARY;
+        _fetchInstruction();
+        break;
+
+
+
+    //
+    // Zero-page address indexed by X, indirect
+    //
+
+    case _CycleId<Instruction::AND_ZP_X_IND,    0x00>():                ////////////////////
+        _AD = _PC++;                                                    // Fetch ZP address
+        break;
+
+    case _CycleId<Instruction::AND_ZP_X_IND,    0x01>():                /////////////////////////
+        _TMP = _DB + _X;                                                // Index ZP address by X
+        break;
+
+    case _CycleId<Instruction::AND_ZP_X_IND,    0x02>():                ////////////////////////////
+        _AD.h = 0x00;                                                   // Fetch addressed low byte
+        _AD.l = _TMP;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_X_IND,    0x03>():                /////////////////////////////
+        _AD.l++;                                                        // Fetch addressed high byte
+        _TMP = _DB;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_X_IND,    0x04>():                ///////////////////////
+        _AD.h = _DB;                                                    // Fetch indirect byte
+        _AD.l = _TMP;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_X_IND,    0x05>():                //////////////
+        // AND_BINARY;
+        _fetchInstruction();
+        break;
+
+
+
+    //
+    // Zero-page address indirect, indexed by Y
+    //
+
+    case _CycleId<Instruction::AND_ZP_IND_Y,    0x00>():                ////////////////////
+        _AD = _PC++;                                                    // Fetch ZP address
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND_Y,    0x01>():                /////////////////////
+        _AD.h = 0x00;                                                   // Fetch ZP low byte
+        _AD.l = _DB;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND_Y,    0x02>():                /////////////////////////////////
+        _AD.l++;                                                        // Fetch ZP high byte
+        _TMP = _DB + _Y;                                                // Save ZP low byte indexed by Y
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND_Y,    0x03>():                /////////////////////////////
+        _AD.h = _DB;                                                    // Fetch addressed byte
+        _AD.l = _TMP;
+
+        // If indexing did not incur a page-cross, skip next step
+        if (_Y <= _TMP) _TCU++;
+        break;
+
+    case _CycleId<Instruction::AND_ZP_IND_Y,    0x04>():                ////////////////////////////////
+        _AD.h++;                                                        // In case of a page-cross only
+        break;                                                          // "Cross" the page
+
+    case _CycleId<Instruction::AND_ZP_IND_Y,    0x05>():                //////////////
+        // AND_BINARY;
+        _fetchInstruction();
+        break;
+
+
+
+
+
     case _CycleId<Instruction::ASL_ABS,      0x00>():
         break;
     case _CycleId<Instruction::ASL_ABS_X,    0x00>():
@@ -613,6 +832,10 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::CLC,          0x00>():
         break;
     case _CycleId<Instruction::CLD,          0x00>():
+        _P.d = 0;
+        break;
+    case _CycleId<Instruction::CLD,          0x01>():
+        _fetchInstruction();
         break;
     case _CycleId<Instruction::CLI,          0x00>():
         break;
@@ -878,6 +1101,10 @@ void CPU::_decodeAndExecute()
     case _CycleId<Instruction::SEC,          0x00>():
         break;
     case _CycleId<Instruction::SED,          0x00>():
+        _P.d = 1;
+        break;
+    case _CycleId<Instruction::SED,          0x01>():
+        _fetchInstruction();
         break;
     case _CycleId<Instruction::SEI,          0x00>():
         break;
@@ -1026,6 +1253,39 @@ void CPU::_resetSequence_cycle6()
 void CPU::_resetSequence_cycle7()
 {
     _fetchInstruction();
+}
+
+inline void CPU::_doAdcBinary(Byte& op1, Byte& op2, Byte& res)
+{
+    _TMP = (op1 + op2 + _P.c) & 0xFF;
+    _P.c = (res < op2);
+    _setZvnFromAdcResult(op1, op2, res);
+}
+
+inline void CPU::_doAdcDecimal(Byte& op1, Byte& op2, Byte& res)
+{
+    res = ((op1 & 0x0F) + (op2 & 0x0F) + _P.c);     // Add lower nibbles of operands
+    uint8_t c = res >= 10 ? 1 : 0;                  // Decimal carry from lower nibble addition
+
+    uint8_t higher  = (op1  >> 4)                   // Take higher nibble of op1, make it lower
+                    + (op2 >> 4)                    // Add higher nibble of op2 made lower
+                    +   c;                          // Add decimal carry from lower nibble addition
+    _P.c = higher >= 10 ? 1 : 0;                    // Set processor carry
+
+    // Shift BCD result back to higher nibble, OR it with BCD lower nibble to get final result
+    res = ((higher % 10) << 4) | (res % 10);
+}
+
+inline void CPU::_setZnFrom(Byte value)
+{
+    _P.z = (value == 0x00);
+    _P.n = ((value &  0x80) > 0);
+}
+
+inline void CPU::_setZvnFromAdcResult(Byte op1, Byte op2, Byte res)
+{
+    _setZnFrom(res);
+    _P.v = (((op1 ^ res) & (op2 ^ res) & 0x80) > 0);
 }
 
 }

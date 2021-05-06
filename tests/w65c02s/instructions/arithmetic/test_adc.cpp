@@ -14,7 +14,7 @@
 namespace emu::w65c02s
 {
 
-TEST_CASE("Instruction::ADC")
+TEST_CASE("Instruction::ADC", TAGS)
 {
     using namespace emu;
     using Ins = w65c02s::Instruction;
@@ -38,15 +38,15 @@ TEST_CASE("Instruction::ADC")
     };                                                                  //0x0020
     ex.registerMemory(ZPData, 0x0000);
 
-    constexpr uint16_t StartAddress = 0x0300;
+    constexpr uint16_t StartAddress = 0x0400;
 
-    SECTION("Immediate mode")
+    SECTION("Immediate operand")
     {
         auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_IMM);
 
         const std::vector<Byte> Program = {
             (Byte)Ins::LDA_IMM,         0x02,           // Load       0x02      into A  (2 cycles)
-            (Byte)Ins::ADC_IMM,         0x03,           // Add        0x03      to   A  (4 cycles)
+            (Byte)Ins::ADC_IMM,         0x03,           // Add        0x03      to   A  (2 cycles)
         };
 
         ex.registerProgram(Program, StartAddress);
@@ -57,6 +57,46 @@ TEST_CASE("Instruction::ADC")
         CHECK(n == it->second.minCycleCost);
         // A should now be 0x05
         REQUIRE(ex.cpu.registers.A == 0x05);
+    }
+
+    SECTION("Zero-page addressing")
+    {
+        auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_ZP);
+
+        const std::vector<Byte> Program = {
+            (Byte)Ins::LDA_IMM,         0x02,           // Load       0x02      into A  (2 cycles)
+            (Byte)Ins::ADC_ZP,          0x05,           // Add     [0x0005]     to   A  (3 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // LDA #$02
+        uint64_t n = ex.instructionStep();  // ADC $05
+
+        CHECK(n == it->second.minCycleCost);
+        // A should now be 0xFC
+        REQUIRE(ex.cpu.registers.A == 0xFC);
+    }
+
+    SECTION("Zero-page addressing, indexed by X")
+    {
+        auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_ZP_X);
+
+        const std::vector<Byte> Program = {
+            (Byte)Ins::LDA_IMM,         0x02,           // Load       0x02      into A  (2 cycles)
+            (Byte)Ins::LDX_IMM,         0x13,           // Load       0x13      into X  (2 cycles)
+            (Byte)Ins::ADC_ZP_X,        0x06,           // Add      0x0006 + X  to   A  (4 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // LDA #$02
+        ex.instructionStep();               // LDX #$13
+        uint64_t n = ex.instructionStep();  // ADC $06,X
+
+        CHECK(n == it->second.minCycleCost);
+        // A should now be 0xBD
+        REQUIRE(ex.cpu.registers.A == 0xBD);
     }
 
     SECTION("Absolute addressing")
@@ -120,25 +160,6 @@ TEST_CASE("Instruction::ADC")
         REQUIRE(ex.cpu.registers.A == 0x0A);
     }
 
-    SECTION("Zero-page addressing")
-    {
-        auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_ZP);
-
-        const std::vector<Byte> Program = {
-            (Byte)Ins::LDA_IMM,         0x02,           // Load       0x02      into A  (2 cycles)
-            (Byte)Ins::ADC_ZP,          0x05,           // Add     [0x0005]     to   A  (3 cycles)
-        };
-
-        ex.registerProgram(Program, StartAddress);
-        ex.instructionStep();               // Reset sequence
-        ex.instructionStep();               // LDA #$02
-        uint64_t n = ex.instructionStep();  // ADC $05
-
-        CHECK(n == it->second.minCycleCost);
-        // A should now be 0xFC
-        REQUIRE(ex.cpu.registers.A == 0xFC);
-    }
-
     SECTION("Zero-page addressing, indirect")
     {
         auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_ZP_IND);
@@ -156,27 +177,6 @@ TEST_CASE("Instruction::ADC")
         CHECK(n == it->second.minCycleCost);
         // A should now be 0x3C
         REQUIRE(ex.cpu.registers.A == 0x3C);
-    }
-
-    SECTION("Zero-page addressing, indexed by X")
-    {
-        auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_ZP_X);
-
-        const std::vector<Byte> Program = {
-            (Byte)Ins::LDA_IMM,         0x02,           // Load       0x02      into A  (2 cycles)
-            (Byte)Ins::LDX_IMM,         0x13,           // Load       0x13      into X  (2 cycles)
-            (Byte)Ins::ADC_ZP_X,        0x06,           // Add      0x0006 + X  to   A  (4 cycles)
-        };
-
-        ex.registerProgram(Program, StartAddress);
-        ex.instructionStep();               // Reset sequence
-        ex.instructionStep();               // LDA #$02
-        ex.instructionStep();               // LDX #$13
-        uint64_t n = ex.instructionStep();  // ADC $06,X
-
-        CHECK(n == it->second.minCycleCost);
-        // A should now be 0xBD
-        REQUIRE(ex.cpu.registers.A == 0xBD);
     }
 
     SECTION("Zero-page addressing indexed by X, indirect")
@@ -221,6 +221,241 @@ TEST_CASE("Instruction::ADC")
         REQUIRE(ex.cpu.registers.A == 0xE7);
     }
 
+    SECTION("Decimal mode (immediate operand)")
+    {
+        auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_IMM);
+
+        const std::vector<Byte> Program = {
+            (Byte)Ins::SED,                             // Set decimal flag             (2 cycles)
+            (Byte)Ins::LDA_IMM,         0x19,           // Load       0x19      into A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x27,           // Add        0x27      to   A  (3 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // SED
+        ex.instructionStep();               // LDA #$19
+        uint64_t n = ex.instructionStep();  // ADC #$27
+        
+        CHECK(n == it->second.maxCycleCost);
+        // A should now be 0x46
+        REQUIRE(ex.cpu.registers.A == 0x46);
+    }
+
+    SECTION("Carry flag")
+    {
+        const std::vector<Byte> Program = {
+            (Byte)Ins::LDA_IMM,         0x19,           // Load       0x19      into A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x70,           // Add        0x70      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x76,           // Add        0x76      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x01,           // Add        0x01      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x01,           // Add        0x01      to   A  (2 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // LDA #$19
+
+        ex.instructionStep();               // ADC #$70
+        // A should now be 0x89, no carry
+        REQUIRE(ex.cpu.registers.A == 0x89);
+        REQUIRE(!ex.cpu.registers.P.c);
+
+        ex.instructionStep();               // ADC #$76
+        // A should now be 0xFF, no carry
+        REQUIRE(ex.cpu.registers.A == 0xFF);
+        REQUIRE(!ex.cpu.registers.P.c);
+
+        ex.instructionStep();               // ADC #$01
+        // A should now be 0x00, with carry
+        REQUIRE(ex.cpu.registers.A == 0x00);
+        REQUIRE(ex.cpu.registers.P.c);
+
+        ex.instructionStep();               // ADC #$01 (and carry from previous ADC)
+        // A should now be 0x02, no carry
+        REQUIRE(ex.cpu.registers.A == 0x02);
+        REQUIRE(!ex.cpu.registers.P.c);
+    }
+
+    SECTION("Overflow flag")
+    {
+        const std::vector<Byte> Program = {
+            (Byte)Ins::LDA_IMM,         0x19,           // Load       0x19      into A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x60,           // Add        0x60      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x76,           // Add        0x76      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0xF5,           // Add        0xF5      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x25,           // Add        0x25      to   A  (2 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // LDA #$19
+
+        ex.instructionStep();               // ADC #$60
+        // A should now be 0x79, no overflow
+        REQUIRE(ex.cpu.registers.A == 0x79);
+        REQUIRE(!ex.cpu.registers.P.v);
+
+        ex.instructionStep();               // ADC #$76
+        // A should now be 0xEF, with overflow
+        REQUIRE(ex.cpu.registers.A == 0xEF);
+        REQUIRE(ex.cpu.registers.P.v);
+
+        ex.instructionStep();               // ADC #$F5
+        // A should now be 0xE4, no overflow
+        REQUIRE(ex.cpu.registers.A == 0xE4);
+        REQUIRE(!ex.cpu.registers.P.v);
+
+        ex.instructionStep();               // ADC #$25 (and carry from previous ADC)
+        // A should now be 0x0A, no overflow
+        REQUIRE(ex.cpu.registers.A == 0x0A);
+        REQUIRE(!ex.cpu.registers.P.v);
+    }
+
+    SECTION("Negative flag")
+    {
+        const std::vector<Byte> Program = {
+            (Byte)Ins::LDA_IMM,         0x19,           // Load       0x19      into A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x60,           // Add        0x60      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x76,           // Add        0x76      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0xF5,           // Add        0xF5      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x25,           // Add        0x25      to   A  (2 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // LDA #$19
+
+        ex.instructionStep();               // ADC #$60
+        // A should now be 0x79, not negative
+        REQUIRE(ex.cpu.registers.A == 0x79);
+        REQUIRE(!ex.cpu.registers.P.n);
+
+        ex.instructionStep();               // ADC #$76
+        // A should now be 0xEF, negative
+        REQUIRE(ex.cpu.registers.A == 0xEF);
+        REQUIRE(ex.cpu.registers.P.n);
+
+        ex.instructionStep();               // ADC #$F5
+        // A should now be 0xE4, negative
+        REQUIRE(ex.cpu.registers.A == 0xE4);
+        REQUIRE(ex.cpu.registers.P.n);
+
+        ex.instructionStep();               // ADC #$25 (and carry from previous ADC)
+        // A should now be 0x0A, not negative
+        REQUIRE(ex.cpu.registers.A == 0x0A);
+        REQUIRE(!ex.cpu.registers.P.n);
+    }
+
+    SECTION("Zero flag")
+    {
+        const std::vector<Byte> Program = {
+            (Byte)Ins::LDA_IMM,         0x19,           // Load       0x19      into A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x60,           // Add        0x60      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x87,           // Add        0x87      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0xF5,           // Add        0xF5      to   A  (2 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // LDA #$19
+
+        ex.instructionStep();               // ADC #$60
+        // A should now be 0x79, non zero
+        REQUIRE(ex.cpu.registers.A == 0x79);
+        REQUIRE(!ex.cpu.registers.P.z);
+
+        ex.instructionStep();               // ADC #$87
+        // A should now be 0x00, zero
+        REQUIRE(ex.cpu.registers.A == 0x00);
+        REQUIRE(ex.cpu.registers.P.z);
+
+        ex.instructionStep();               // ADC #$F5 (and carry from previous ADC)
+        // A should now be 0xF6, non zero
+        REQUIRE(ex.cpu.registers.A == 0xF6);
+        REQUIRE(!ex.cpu.registers.P.z);
+    }
+
+    SECTION("Decimal carry")
+    {
+        const std::vector<Byte> Program = {
+            (Byte)Ins::SED,                             // Set decimal flag
+            (Byte)Ins::LDA_IMM,         0x11,           // Load       0x11      into A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x79,           // Add        0x79      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x76,           // Add        0x76      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x33,           // Add        0x33      to   A  (2 cycles)
+            (Byte)Ins::ADC_IMM,         0x01,           // Add        0x01      to   A  (2 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // SED
+        ex.instructionStep();               // LDA #$11
+
+        ex.instructionStep();               // ADC #$79
+        // A should now be 0x90, no carry
+        REQUIRE(ex.cpu.registers.A == 0x90);
+        REQUIRE(!ex.cpu.registers.P.c);
+
+        ex.instructionStep();               // ADC #$76
+        // A should now be 0x66, with carry
+        REQUIRE(ex.cpu.registers.A == 0x66);
+        REQUIRE(ex.cpu.registers.P.c);
+
+        ex.instructionStep();               // ADC #$33 (and carry from previous ADC)
+        // A should now be 0x00, with carry
+        REQUIRE(ex.cpu.registers.A == 0x00);
+        REQUIRE(ex.cpu.registers.P.c);
+
+        ex.instructionStep();               // ADC #$01 (and carry from previous ADC)
+        // A should now be 0x02, no carry
+        REQUIRE(ex.cpu.registers.A == 0x02);
+        REQUIRE(!ex.cpu.registers.P.c);
+    }
+
+    SECTION("Page cross (ADC a,X)")
+    {
+        auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_ABS_X);
+
+        const std::vector<Byte> Program = {
+            (Byte)Ins::LDX_IMM,         0x20,           // Load       0x20      into X  (2 cycles)
+            (Byte)Ins::LDA_IMM,         0x19,           // Load       0x19      into A  (2 cycles)
+            (Byte)Ins::ADC_ABS_X,       0xFA,   0x01,   // Add     [0x01FA + X] to   A  (5 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // LDX #$20
+        ex.instructionStep();               // LDA #$19
+        uint64_t n = ex.instructionStep();  // ADC $01FA,X
+        
+        CHECK(n == it->second.minCycleCost + 1);
+        // A should now be 0x1D
+        REQUIRE(ex.cpu.registers.A == 0x1D);
+    }
+
+    SECTION("Page cross in decimal mode (ADC a,X)")
+    {
+        auto it = FIND_INSTRUCTION_INFO_OR_FAIL(Ins::ADC_ABS_X);
+
+        const std::vector<Byte> Program = {
+            (Byte)Ins::SED,                             // Set decimal flag             (2 cycles)
+            (Byte)Ins::LDX_IMM,         0x20,           // Load       0x20      into X  (2 cycles)
+            (Byte)Ins::LDA_IMM,         0x19,           // Load       0x19      into A  (2 cycles)
+            (Byte)Ins::ADC_ABS_X,       0xFA,   0x01,   // Add     [0x01FA + X] to   A  (6 cycles)
+        };
+
+        ex.registerProgram(Program, StartAddress);
+        ex.instructionStep();               // Reset sequence
+        ex.instructionStep();               // SED
+        ex.instructionStep();               // LDX #$20
+        ex.instructionStep();               // LDA #$19
+        uint64_t n = ex.instructionStep();  // ADC $01FA,X
+        
+        CHECK(n == it->second.maxCycleCost);
+        // A should now be 0x23
+        REQUIRE(ex.cpu.registers.A == 0x23);
+    }
 }
 
 }
