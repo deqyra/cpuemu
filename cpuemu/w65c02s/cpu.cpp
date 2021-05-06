@@ -489,6 +489,9 @@ void CPU::_decodeAndExecute()
         _fetchInstruction();
         break;
 
+#undef ADC_BINARY
+#undef ADC_DECIMAL_COMPUTE
+#undef ADC_DECIMAL_SET_ZVN
 
 
 
